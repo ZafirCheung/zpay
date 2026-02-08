@@ -6,10 +6,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import PurchaseHistory from "@/components/PurchaseHistory";
 
-// 订阅信息类型
+// 订阅信息类型（对应 zpay_transactions 表字段）
 interface SubscriptionInfo {
   id: string;
   name: string;
+  status: string;
+  is_subscription: boolean;
   subscription_period: string | null;
   subscription_start_date: string | null;
   subscription_end_date: string | null;
@@ -97,19 +99,44 @@ export default function DashboardClient({
             </p>
             {/* 订阅信息 */}
             {subscription ? (
-              <div className="mt-2 inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-green-50 text-green-700 border border-green-200">
-                <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-                <span>
-                  订阅有效 ·{" "}
-                  {subscription.subscription_period === "monthly"
+              (() => {
+                const endDate = subscription.subscription_end_date
+                  ? new Date(subscription.subscription_end_date)
+                  : null;
+                // 已支付的记录：如果没有 subscription_end_date（webhook 未回调设置），
+                // 视为有效；如果有到期时间，则判断是否在未来
+                const isActive = endDate ? endDate > new Date() : true;
+                const periodLabel =
+                  subscription.subscription_period === "monthly"
                     ? "月付"
-                    : "年付"}{" "}
-                  · 到期时间:{" "}
-                  {new Date(
-                    subscription.subscription_end_date!
-                  ).toLocaleDateString("zh-CN")}
-                </span>
-              </div>
+                    : subscription.subscription_period === "yearly"
+                      ? "年付"
+                      : subscription.is_subscription
+                        ? "订阅"
+                        : "一次性购买";
+
+                return isActive ? (
+                  <div className="mt-2 inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-green-50 text-green-700 border border-green-200">
+                    <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                    <span>
+                      订阅有效{periodLabel ? ` · ${periodLabel}` : ""}
+                      {endDate
+                        ? ` · 到期时间: ${endDate.toLocaleDateString("zh-CN")}`
+                        : ""}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mt-2 inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-orange-50 text-orange-700 border border-orange-200">
+                    <span className="w-2 h-2 rounded-full bg-orange-500 mr-2"></span>
+                    <span>
+                      订阅已过期{periodLabel ? ` · ${periodLabel}` : ""}
+                      {endDate
+                        ? ` · 过期时间: ${endDate.toLocaleDateString("zh-CN")}`
+                        : ""}
+                    </span>
+                  </div>
+                );
+              })()
             ) : (
               <div className="mt-2 inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-gray-50 text-gray-500 border border-gray-200">
                 <span className="w-2 h-2 rounded-full bg-gray-400 mr-2"></span>

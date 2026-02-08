@@ -39,18 +39,39 @@ export default async function DashboardLayout({
     redirect("/signin?redirect=/dashboard");
   }
 
-  // 获取用户的有效订阅信息（已支付 + 订阅类型 + 到期时间在未来）
-  const { data: subscriptions } = await supabase
+  // 获取用户最新的已支付订阅记录
+  // 显式传入 user_id 过滤，避免仅依赖 RLS 导致结果为空
+  // 不限制 subscription_end_date（可能为 NULL），由前端判断是否有效
+  const { data: subscriptions, error: subError } = await supabase
     .from("zpay_transactions")
     .select("*")
+    .eq("user_id", user.id)
     .eq("is_subscription", true)
     .eq("status", "paid")
-    .gte("subscription_end_date", new Date().toISOString())
-    .order("subscription_end_date", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(1);
 
-  const activeSubscription =
+  if (subError) {
+    console.error("获取订阅信息失败:", subError);
+  }
+
+  // 如果没有找到订阅记录，尝试查找任意已支付记录（可能 is_subscription 未正确标记）
+  let activeSubscription =
     subscriptions && subscriptions.length > 0 ? subscriptions[0] : null;
+
+  if (!activeSubscription) {
+    const { data: fallbackSubs } = await supabase
+      .from("zpay_transactions")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("status", "paid")
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (fallbackSubs && fallbackSubs.length > 0) {
+      activeSubscription = fallbackSubs[0];
+    }
+  }
 
   // 将用户数据和订阅信息放到全局对象供页面组件使用
   (global as any).__dashboardUser = user;

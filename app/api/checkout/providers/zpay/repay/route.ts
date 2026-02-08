@@ -86,9 +86,14 @@ export async function POST(request: NextRequest) {
     const notifyUrl = `${baseUrl}/api/checkout/providers/zpay/webhook`;
     const returnUrl = `${baseUrl}/payment/success`;
 
+    // 关键：DECIMAL(10,2) 从数据库取出可能带尾零（如 "0.10"），
+    // 必须通过 parseFloat 去除尾零，还原为原始格式（如 "0.1"），
+    // 否则签名字符串不同，导致 zpay 报 Invalid signature
+    const normalizedMoney = parseFloat(String(transaction.money)).toString();
+
     const params: Record<string, string> = {
       pid,
-      money: String(transaction.money),
+      money: normalizedMoney,
       name: transaction.name,
       notify_url: notifyUrl,
       out_trade_no: transaction.out_trade_no,
