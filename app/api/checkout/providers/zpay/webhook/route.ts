@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerAdminClient } from "@/utils/supabase/server";
 import crypto from "crypto";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * zpay 签名算法：
  * 1. 将参数按 key 的 ASCII 码从小到大排序
