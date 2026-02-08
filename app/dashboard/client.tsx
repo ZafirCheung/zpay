@@ -4,12 +4,26 @@ import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import PurchaseHistory from "@/components/PurchaseHistory";
+
+// 订阅信息类型
+interface SubscriptionInfo {
+  id: string;
+  name: string;
+  subscription_period: string | null;
+  subscription_start_date: string | null;
+  subscription_end_date: string | null;
+}
 
 interface DashboardClientProps {
   user?: User | null;
+  subscription?: SubscriptionInfo | null;
 }
 
-export default function DashboardClient({ user }: DashboardClientProps) {
+export default function DashboardClient({
+  user,
+  subscription,
+}: DashboardClientProps) {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const supabase = createClient();
@@ -17,7 +31,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
   // 如果props中的user为undefined，尝试从客户端获取用户
   useEffect(() => {
     const getUserFromClient = async () => {
-      console.log("user", user);
       if (user) {
         setCurrentUser(user);
         setLoading(false);
@@ -82,6 +95,27 @@ export default function DashboardClient({ user }: DashboardClientProps) {
             <p className="text-gray-600 mb-2">
               <span className="font-medium">邮箱:</span> {currentUser.email}
             </p>
+            {/* 订阅信息 */}
+            {subscription ? (
+              <div className="mt-2 inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-green-50 text-green-700 border border-green-200">
+                <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                <span>
+                  订阅有效 ·{" "}
+                  {subscription.subscription_period === "monthly"
+                    ? "月付"
+                    : "年付"}{" "}
+                  · 到期时间:{" "}
+                  {new Date(
+                    subscription.subscription_end_date!
+                  ).toLocaleDateString("zh-CN")}
+                </span>
+              </div>
+            ) : (
+              <div className="mt-2 inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-gray-50 text-gray-500 border border-gray-200">
+                <span className="w-2 h-2 rounded-full bg-gray-400 mr-2"></span>
+                <span>未订阅</span>
+              </div>
+            )}
           </div>
           <div className="mt-4 md:mt-0">
             <button
@@ -93,6 +127,9 @@ export default function DashboardClient({ user }: DashboardClientProps) {
           </div>
         </div>
       </div>
+
+      {/* 购买历史 */}
+      <PurchaseHistory />
     </div>
   );
 }

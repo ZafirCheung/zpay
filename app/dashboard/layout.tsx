@@ -39,8 +39,22 @@ export default async function DashboardLayout({
     redirect("/signin?redirect=/dashboard");
   }
 
+  // 获取用户的有效订阅信息（已支付 + 订阅类型 + 到期时间在未来）
+  const { data: subscriptions } = await supabase
+    .from("zpay_transactions")
+    .select("*")
+    .eq("is_subscription", true)
+    .eq("status", "paid")
+    .gte("subscription_end_date", new Date().toISOString())
+    .order("subscription_end_date", { ascending: false })
+    .limit(1);
+
+  const activeSubscription =
+    subscriptions && subscriptions.length > 0 ? subscriptions[0] : null;
+
   // 将用户数据和订阅信息放到全局对象供页面组件使用
   (global as any).__dashboardUser = user;
+  (global as any).__dashboardSubscription = activeSubscription;
 
   return (
     <section className="relative">

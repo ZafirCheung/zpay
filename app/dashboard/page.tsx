@@ -5,7 +5,8 @@ import { DashboardClient } from "./index";
 export default function Dashboard() {
   // 从服务器端获取数据
   const user = (global as any).__dashboardUser as User;
+  const subscription = (global as any).__dashboardSubscription;
 
   // 直接传递给客户端组件
-  return <DashboardClient user={user} />;
+  return <DashboardClient user={user} subscription={subscription} />;
 }
